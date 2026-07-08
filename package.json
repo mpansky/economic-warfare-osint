@@ -1,0 +1,10 @@
+{
+  "name": "emissary",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "install:frontend": "cd frontend && npm install",
+    "postinstall": "cd frontend && npm install"
+  }
+}
