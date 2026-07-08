@@ -821,13 +821,23 @@ export async function deleteBriefing(id: string): Promise<void> {
 
 // --- Auth ---
 
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || '';
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || '';
+
+function authFunctionUrl(path: string): string {
+  return `${SUPABASE_URL}/functions/v1/auth${path}`;
+}
+
 export async function login(
   username: string,
   password: string,
 ): Promise<{ access_token: string; username: string; is_admin?: boolean }> {
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
+  const res = await fetch(authFunctionUrl('/login'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
     body: JSON.stringify({ username, password }),
   });
   if (!res.ok) {
@@ -838,7 +848,20 @@ export async function login(
 }
 
 export async function fetchMe(): Promise<{ username: string; is_admin: boolean }> {
-  const res = await authedFetch(`${API_BASE}/api/auth/me`);
+  const token = getToken();
+  const res = await fetch(authFunctionUrl('/me'), {
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'X-Emissary-Token': token || '',
+    },
+  });
+  if (res.status === 401) {
+    clearToken();
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    throw new Error('Unauthorized');
+  }
   return parseJson<{ username: string; is_admin: boolean }>(res);
 }
 
